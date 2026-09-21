@@ -12,7 +12,6 @@ import {
 } from "react";
 import { MagazinePage } from "@/components/magazine/magazine-page";
 import { MagazineRenderer } from "@/components/magazine/magazine-renderer";
-import { CurlLeaf } from "@/components/magazine/curl-leaf";
 import type { PageImage } from "@/lib/page-images";
 import type { Page, PublicationMaterial } from "@/lib/publication";
 import type { Spread } from "@/lib/spreads";
@@ -324,17 +323,6 @@ export function MagazineBook({
   const frontSide = turn?.dir === 1 ? "right" : ("left" as const);
   const backSide = turn?.dir === 1 ? "left" : ("right" as const);
 
-  // Curl slices reproduce page images as backgrounds, so rotated pages,
-  // custom React content, and narrow solo covers fall back to the rigid
-  // flat leaf (no landing snap; covers are stiff boards anyway).
-  const needsFlatLeaf =
-    turn != null &&
-    ([frontPage, backPage].some(
-      (p) => p && (p.rotation % 180 !== 0 || content?.[p.id] != null),
-    ) ||
-      spreads[turn.from].kind !== "interior" ||
-      spreads[turn.to].kind !== "interior");
-
   const commit = () => {
     if (!turn) return;
     const target = spreads[turn.to];
@@ -401,41 +389,21 @@ export function MagazineBook({
         </div>
       )}
 
-      {/* Turning leaf: curling chain, or the flat fallback for rotated /
-          custom-content pages. The ONLY animated elements live in here. */}
-      {turn &&
-        (needsFlatLeaf ? (
-          <FlatLeaf
-            dir={turn.dir}
-            frontPage={frontPage}
-            frontImage={frontPage ? images[frontPage.id] : undefined}
-            frontSide={frontSide}
-            backPage={backPage}
-            backImage={backPage ? images[backPage.id] : undefined}
-            backSide={backSide}
-            material={material}
-            content={content}
-            onDone={commit}
-          />
-        ) : (
-          <CurlLeaf
-            dir={turn.dir}
-            front={{
-              page: frontPage,
-              src: frontPage ? images[frontPage.id]?.preview : undefined,
-            }}
-            back={{
-              page: backPage,
-              src: backPage ? images[backPage.id]?.preview : undefined,
-            }}
-            material={material}
-            onDone={commit}
-            className={cn(
-              "absolute inset-y-0 z-10 w-1/2",
-              turn.dir === 1 ? "right-0" : "left-0",
-            )}
-          />
-        ))}
+      {/* Turning leaf: the ONLY animated element. */}
+      {turn && (
+        <FlatLeaf
+          dir={turn.dir}
+          frontPage={frontPage}
+          frontImage={frontPage ? images[frontPage.id] : undefined}
+          frontSide={frontSide}
+          backPage={backPage}
+          backImage={backPage ? images[backPage.id] : undefined}
+          backSide={backSide}
+          material={material}
+          content={content}
+          onDone={commit}
+        />
+      )}
 
       {/* Click zones. */}
       <button
