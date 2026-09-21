@@ -12,6 +12,7 @@ import {
 } from "react";
 import { MagazinePage } from "@/components/magazine/magazine-page";
 import { MagazineRenderer } from "@/components/magazine/magazine-renderer";
+import { CurlLeaf } from "@/components/magazine/curl-leaf";
 import type { PageImage } from "@/lib/page-images";
 import type { Page, PublicationMaterial } from "@/lib/publication";
 import type { Spread } from "@/lib/spreads";
@@ -68,6 +69,92 @@ function LeafFace({
         animate={{ opacity: shadeTo }}
         transition={{ duration: TURN_DURATION, ease: [...TURN_EASE] }}
       />
+    </div>
+  );
+}
+
+/**
+ * Rigid flat leaf (fallback). Used when a turning page is rotated or
+ * carries custom React content, which the background-sliced curl cannot
+ * reproduce without snapping at landing.
+ */
+function FlatLeaf({
+  dir,
+  frontPage,
+  frontImage,
+  frontSide,
+  backPage,
+  backImage,
+  backSide,
+  material,
+  content,
+  onDone,
+}: {
+  dir: 1 | -1;
+  frontPage: Page | null;
+  frontImage?: PageImage;
+  frontSide: "left" | "right";
+  backPage: Page | null;
+  backImage?: PageImage;
+  backSide: "left" | "right";
+  material: PublicationMaterial;
+  content?: Record<string, ReactNode>;
+  onDone: () => void;
+}) {
+  return (
+    <div
+      aria-hidden
+      className={cn(
+        "absolute inset-y-0 z-10 w-1/2",
+        dir === 1 ? "right-0" : "left-0",
+      )}
+      style={{ perspective: "2200px" }}
+    >
+      <motion.div
+        className="relative h-full w-full"
+        style={{
+          transformStyle: "preserve-3d",
+          transformOrigin: dir === 1 ? "left center" : "right center",
+        }}
+        initial={{ rotateY: 0 }}
+        animate={{ rotateY: dir === 1 ? -180 : 180 }}
+        transition={{ duration: TURN_DURATION, ease: [...TURN_EASE] }}
+        onAnimationComplete={onDone}
+      >
+        <div
+          className="absolute inset-0"
+          style={{ backfaceVisibility: "hidden" }}
+        >
+          <LeafFace
+            page={frontPage}
+            image={frontImage}
+            material={material}
+            side={frontSide}
+            shadeFrom={0}
+            shadeTo={0.45}
+          >
+            {frontPage ? content?.[frontPage.id] : undefined}
+          </LeafFace>
+        </div>
+        <div
+          className="absolute inset-0"
+          style={{
+            backfaceVisibility: "hidden",
+            transform: "rotateY(180deg)",
+          }}
+        >
+          <LeafFace
+            page={backPage}
+            image={backImage}
+            material={material}
+            side={backSide}
+            shadeFrom={0.45}
+            shadeTo={0}
+          >
+            {backPage ? content?.[backPage.id] : undefined}
+          </LeafFace>
+        </div>
+      </motion.div>
     </div>
   );
 }
@@ -237,6 +324,17 @@ export function MagazineBook({
   const frontSide = turn?.dir === 1 ? "right" : ("left" as const);
   const backSide = turn?.dir === 1 ? "left" : ("right" as const);
 
+  // Curl slices reproduce page images as backgrounds, so rotated pages,
+  // custom React content, and narrow solo covers fall back to the rigid
+  // flat leaf (no landing snap; covers are stiff boards anyway).
+  const needsFlatLeaf =
+    turn != null &&
+    ([frontPage, backPage].some(
+      (p) => p && (p.rotation % 180 !== 0 || content?.[p.id] != null),
+    ) ||
+      spreads[turn.from].kind !== "interior" ||
+      spreads[turn.to].kind !== "interior");
+
   const commit = () => {
     if (!turn) return;
     const target = spreads[turn.to];
@@ -303,63 +401,41 @@ export function MagazineBook({
         </div>
       )}
 
-      {/* Turning leaf: the ONLY animated element. */}
-      {turn && (
-        <div
-          aria-hidden
-          className={cn(
-            "absolute inset-y-0 z-10 w-1/2",
-            turn.dir === 1 ? "right-0" : "left-0",
-          )}
-          style={{ perspective: "2200px" }}
-        >
-          <motion.div
-            className="relative h-full w-full"
-            style={{
-              transformStyle: "preserve-3d",
-              transformOrigin: turn.dir === 1 ? "left center" : "right center",
+      {/* Turning leaf: curling chain, or the flat fallback for rotated /
+          custom-content pages. The ONLY animated elements live in here. */}
+      {turn &&
+        (needsFlatLeaf ? (
+          <FlatLeaf
+            dir={turn.dir}
+            frontPage={frontPage}
+            frontImage={frontPage ? images[frontPage.id] : undefined}
+            frontSide={frontSide}
+            backPage={backPage}
+            backImage={backPage ? images[backPage.id] : undefined}
+            backSide={backSide}
+            material={material}
+            content={content}
+            onDone={commit}
+          />
+        ) : (
+          <CurlLeaf
+            dir={turn.dir}
+            front={{
+              page: frontPage,
+              src: frontPage ? images[frontPage.id]?.preview : undefined,
             }}
-            initial={{ rotateY: 0 }}
-            animate={{ rotateY: turn.dir === 1 ? -180 : 180 }}
-            transition={{ duration: TURN_DURATION, ease: [...TURN_EASE] }}
-            onAnimationComplete={commit}
-          >
-            <div
-              className="absolute inset-0"
-              style={{ backfaceVisibility: "hidden" }}
-            >
-              <LeafFace
-                page={frontPage}
-                image={frontPage ? images[frontPage.id] : undefined}
-                material={material}
-                side={frontSide}
-                shadeFrom={0}
-                shadeTo={0.45}
-              >
-                {frontPage ? content?.[frontPage.id] : undefined}
-              </LeafFace>
-            </div>
-            <div
-              className="absolute inset-0"
-              style={{
-                backfaceVisibility: "hidden",
-                transform: "rotateY(180deg)",
-              }}
-            >
-              <LeafFace
-                page={backPage}
-                image={backPage ? images[backPage.id] : undefined}
-                material={material}
-                side={backSide}
-                shadeFrom={0.45}
-                shadeTo={0}
-              >
-                {backPage ? content?.[backPage.id] : undefined}
-              </LeafFace>
-            </div>
-          </motion.div>
-        </div>
-      )}
+            back={{
+              page: backPage,
+              src: backPage ? images[backPage.id]?.preview : undefined,
+            }}
+            material={material}
+            onDone={commit}
+            className={cn(
+              "absolute inset-y-0 z-10 w-1/2",
+              turn.dir === 1 ? "right-0" : "left-0",
+            )}
+          />
+        ))}
 
       {/* Click zones. */}
       <button
