@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+:root {
+  /* ——— ZineBook editorial tokens ——— */
+  --paper: #faf8f4;
+  --paper-deep: #f3efe6;
+  --ink: #16130e;
+  --ink-soft: #3d3830;
+  --muted: #6f6a5f;
+  --line: #e5dfd2;
+  --line-soft: #ede8db;
+  --accent: #16130e;
+  --accent-ink: #faf8f4;
+  --gold: #a98e4f;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-deep: var(--paper-deep);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-gold: var(--gold);
+
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* Realistic magazine page surface */
+.magazine-page-surface {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 30%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0) 12%),
+    #fffdf8;
+}
