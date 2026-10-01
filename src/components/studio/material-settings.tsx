@@ -1,6 +1,7 @@
 "use client";
 
-import { Palette } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { PaletteIcon } from "@hugeicons/core-free-icons";
 import { Slider } from "@/components/ui/slider";
 import { MATERIAL_GROUPS, materialSurface } from "@/lib/materials";
 import { usePublication } from "@/lib/publication-store";
@@ -12,9 +13,12 @@ function Swatch({ type }: { type: MaterialType }) {
   return (
     <span
       aria-hidden
-      className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border border-ink/15"
+      className="relative h-6 w-6 shrink-0 overflow-hidden rounded-md border border-ink/15"
       style={{ backgroundColor: surface.warmth }}
     >
+      {surface.pattern && (
+        <span className="absolute inset-0" style={{ backgroundImage: surface.pattern }} />
+      )}
       <span
         className="absolute inset-0"
         style={{
@@ -47,13 +51,13 @@ export function MaterialSettings() {
   const material = publication.material;
 
   return (
-    <section className="rounded-xl border border-line bg-paper p-4">
-      <h3 className="flex items-center gap-2 text-sm font-semibold">
-        <Palette className="h-4 w-4" />
+    <section className="border-b border-line p-4 last:border-b-0">
+      <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
+        <HugeiconsIcon icon={PaletteIcon} className="h-3.5 w-3.5" />
         Material
       </h3>
 
-      <div className="mt-3 space-y-4" role="radiogroup" aria-label="Paper stock">
+      <div className="mt-2 space-y-3" role="radiogroup" aria-label="Paper stock">
         {MATERIAL_GROUPS.map((group) => (
           <div key={group.name}>
             <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
@@ -79,7 +83,7 @@ export function MaterialSettings() {
                   >
                     <Swatch type={m.type} />
                     <span>
-                      <span className="block text-[13px] font-medium leading-4">
+                      <span className="block text-xs font-medium leading-4">
                         {m.label}
                       </span>
                       <span
@@ -99,7 +103,7 @@ export function MaterialSettings() {
         ))}
       </div>
 
-      <div className="mt-4 space-y-4 border-t border-line pt-4">
+      <div className="mt-3 space-y-3 border-t border-line pt-3">
         <Slider
           label="Page depth"
           minLabel="Thin"

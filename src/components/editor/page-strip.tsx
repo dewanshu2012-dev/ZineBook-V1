@@ -12,7 +12,7 @@ import {
 import {
   SortableContext,
   sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
+  horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useMemo } from "react";
 import { SortablePageCard } from "@/components/editor/sortable-page-card";
@@ -53,15 +53,17 @@ export function PageStrip() {
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
     >
-      <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+      <SortableContext items={ids} strategy={horizontalListSortingStrategy}>
         <ol
-          className="flex gap-2.5 overflow-x-auto pb-1 md:flex-col md:overflow-visible md:pb-0"
-          aria-label="Pages — drag to reorder"
+          className="flex gap-2 overflow-x-auto px-1 pb-2 pt-1"
+          aria-label="Pages, drag to reorder"
         >
           {publication.pages.map((p) => (
             <SortablePageCard
               key={p.id}
               page={p}
+              coverMode={publication.coverMode}
+              totalPages={publication.pages.length}
               image={images[p.id]}
               selected={p.id === selectedId}
               onSelect={() => select(p.id)}

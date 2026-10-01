@@ -14,22 +14,29 @@ export type MaterialSurface = {
   grain: number;
   /** Whether a diagonal gloss highlight is rendered. */
   sheen: boolean;
-  /** Warm paper tint overlay (CSS color, applied at low opacity). */
+  /** Paper colour, multiplied over the print (white areas take it on). */
   warmth: string;
+  /** How ink sits on the stock (CSS filter on the printed image). */
+  ink: string;
+  /** Optional surface weave (CSS background). */
+  pattern?: string;
 };
 
+const WEAVE =
+  "repeating-linear-gradient(0deg, rgba(60,50,30,.07) 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, rgba(60,50,30,.06) 0 1px, transparent 1px 3px)";
+
 const SURFACES: Record<MaterialType, MaterialSurface> = {
-  "smooth-matte": { grain: 1.0, sheen: false, warmth: "#fffdf8" },
-  glossy: { grain: 0.3, sheen: true, warmth: "#ffffff" },
-  "premium-matte": { grain: 0.8, sheen: false, warmth: "#fffdf8" },
-  uncoated: { grain: 1.3, sheen: false, warmth: "#faf6ec" },
-  "matte-cover": { grain: 0.6, sheen: false, warmth: "#fffdf8" },
-  "glossy-cover": { grain: 0.3, sheen: true, warmth: "#ffffff" },
-  "soft-touch": { grain: 0.8, sheen: false, warmth: "#fbf9f5" },
-  cardstock: { grain: 0.6, sheen: false, warmth: "#f8f4e9" },
-  kraft: { grain: 1.3, sheen: false, warmth: "#e8d5b0" },
-  linen: { grain: 1.2, sheen: false, warmth: "#faf8f2" },
-  recycled: { grain: 1.4, sheen: false, warmth: "#f3eee1" },
+  "smooth-matte": { grain: 0.6, sheen: false, warmth: "#fbf8f1", ink: "none" },
+  glossy: { grain: 0.15, sheen: true, warmth: "#ffffff", ink: "contrast(1.06) saturate(1.15)" },
+  "premium-matte": { grain: 0.5, sheen: false, warmth: "#fcfaf4", ink: "contrast(1.12)" },
+  uncoated: { grain: 1.1, sheen: false, warmth: "#f6f0e2", ink: "contrast(0.9) saturate(0.85)" },
+  "matte-cover": { grain: 0.4, sheen: false, warmth: "#faf8f2", ink: "contrast(1.04)" },
+  "glossy-cover": { grain: 0.1, sheen: true, warmth: "#ffffff", ink: "contrast(1.1) saturate(1.2)" },
+  "soft-touch": { grain: 0.5, sheen: false, warmth: "#f5f3ee", ink: "contrast(0.95) saturate(0.9) brightness(0.98)" },
+  cardstock: { grain: 0.8, sheen: false, warmth: "#f2ead8", ink: "contrast(0.96)" },
+  kraft: { grain: 1.4, sheen: false, warmth: "#d9bf91", ink: "contrast(0.9) saturate(0.7)" },
+  linen: { grain: 0.6, sheen: false, warmth: "#f7f3ea", ink: "contrast(0.95)", pattern: WEAVE },
+  recycled: { grain: 1.8, sheen: false, warmth: "#ebe4d3", ink: "contrast(0.9) saturate(0.75)" },
 };
 
 export function materialSurface(type: MaterialType): MaterialSurface {

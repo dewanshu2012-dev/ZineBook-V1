@@ -1,4 +1,5 @@
-import { BookOpenText } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Book02Icon } from "@hugeicons/core-free-icons";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -10,7 +11,7 @@ export function Logo({ className }: { className?: string }) {
       aria-label="ZineBook home"
     >
       <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-ink text-paper">
-        <BookOpenText className="h-[17px] w-[17px]" strokeWidth={1.75} />
+        <HugeiconsIcon icon={Book02Icon} className="h-[17px] w-[17px]" strokeWidth={1.75} />
       </span>
       <span className="font-display text-[19px] font-semibold tracking-[-0.01em]">
         ZineBook

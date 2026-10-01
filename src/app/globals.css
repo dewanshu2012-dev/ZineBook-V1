@@ -12,6 +12,8 @@
   --accent: #16130e;
   --accent-ink: #faf8f4;
   --gold: #a98e4f;
+  --font-system-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
 }
 
 @theme inline {
@@ -26,9 +28,9 @@
   --color-accent-ink: var(--accent-ink);
   --color-gold: var(--gold);
 
-  --font-display: var(--font-display);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-mono);
+  --font-display: var(--font-system-mono);
+  --font-sans: var(--font-system-mono);
+  --font-mono: var(--font-system-mono);
 }
 
 html {
@@ -38,7 +40,7 @@ html {
 body {
   background: var(--paper);
   color: var(--ink);
-  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-system-mono);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }

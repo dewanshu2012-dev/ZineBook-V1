@@ -1,6 +1,7 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Loading03Icon } from "@hugeicons/core-free-icons";
 
 export function ProcessingView({
   stage,
@@ -18,7 +19,7 @@ export function ProcessingView({
       role="status"
       aria-live="polite"
     >
-      <Loader2 className="mx-auto h-7 w-7 animate-spin text-ink" strokeWidth={1.75} />
+      <HugeiconsIcon icon={Loading03Icon} className="mx-auto h-7 w-7 animate-spin text-ink" strokeWidth={1.75} />
       <p className="mt-4 text-[15px] font-medium">{stage}</p>
       <div
         className="mx-auto mt-5 h-[6px] max-w-sm overflow-hidden rounded-full bg-ink/10"

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { MaterialLayer } from "@/components/magazine/material-layer";
+import { materialSurface } from "@/lib/materials";
 import type { PageImage } from "@/lib/page-images";
 import type { Page, PublicationMaterial } from "@/lib/publication";
 import { cn } from "@/lib/utils";
@@ -57,6 +58,7 @@ export function MagazinePage({
               "h-full w-full object-contain",
               rotationClass(page.rotation),
             )}
+            style={{ filter: materialSurface(material.type).ink }}
             draggable={false}
             onLoad={onImageLoad}
           />
@@ -78,7 +80,7 @@ export function MagazinePage({
         <div
           aria-hidden
           className={cn(
-            "pointer-events-none absolute inset-y-0 w-[18%]",
+            "pointer-events-none absolute inset-y-0 w-[9%]",
             side === "left"
               ? "right-0 bg-gradient-to-l from-ink/[0.16] to-transparent"
               : "left-0 bg-gradient-to-r from-ink/[0.16] to-transparent",

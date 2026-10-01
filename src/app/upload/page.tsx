@@ -1,4 +1,5 @@
-import { ArrowLeft } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { SiteFooter } from "@/components/landing/site-footer";
 import { SiteHeader } from "@/components/landing/site-header";
 import { UploadClient } from "@/components/upload/upload-client";
@@ -12,7 +13,7 @@ export default function UploadPage() {
       <main className="flex-1">
         <Container className="py-12 md:py-16">
           <ButtonLink href="/" variant="ghost" size="sm" className="-ml-4">
-            <ArrowLeft className="h-4 w-4" />
+            <HugeiconsIcon icon={ArrowLeft01Icon} className="h-4 w-4" />
             Back
           </ButtonLink>
           <div className="mx-auto mt-8 max-w-2xl text-center">
