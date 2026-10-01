@@ -1,10 +1,10 @@
 "use client";
 
 import { HugeiconsIcon } from "@hugeicons/react";
-import { ArrowLeftRightIcon, BookOpen01Icon } from "@hugeicons/core-free-icons";
+import { BookOpen01Icon } from "@hugeicons/core-free-icons";
 import type { Spread } from "@/lib/spreads";
 import { usePublication } from "@/lib/publication-store";
-import type { CoverMode, ReadingDirection } from "@/lib/publication";
+import type { CoverMode } from "@/lib/publication";
 import { cn } from "@/lib/utils";
 
 const COVER_STYLES: { mode: CoverMode; name: string; body: string }[] = [
@@ -18,11 +18,6 @@ const COVER_STYLES: { mode: CoverMode; name: string; body: string }[] = [
     name: "Front + Back",
     body: "The first and last pages are standalone covers.",
   },
-];
-
-const DIRECTIONS: { dir: ReadingDirection; name: string }[] = [
-  { dir: "ltr", name: "Left → Right" },
-  { dir: "rtl", name: "Right → Left" },
 ];
 
 export function CoverSettings({ spreads }: { spreads: Spread[] }) {
@@ -110,44 +105,6 @@ export function CoverSettings({ spreads }: { spreads: Spread[] }) {
       <p className="mt-2 font-mono text-[10px] text-muted">
         {spreads.length} {spreads.length === 1 ? "spread" : "spreads"} in preview
       </p>
-    </section>
-  );
-}
-
-export function ReadingSettings() {
-  const { publication, setReadingDirection } = usePublication();
-  if (!publication) return null;
-
-  return (
-    <section className="border-b border-line p-4 last:border-b-0">
-      <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
-        <HugeiconsIcon icon={ArrowLeftRightIcon} className="h-3.5 w-3.5" />
-        Reading
-      </h3>
-      <div
-        className="mt-2 grid grid-cols-2 gap-1 rounded-lg border border-line bg-white p-1"
-        role="radiogroup"
-        aria-label="Reading direction"
-      >
-        {DIRECTIONS.map((d) => {
-          const active = publication.readingDirection === d.dir;
-          return (
-            <button
-              key={d.dir}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              onClick={() => setReadingDirection(d.dir)}
-              className={cn(
-                "rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
-                active ? "bg-ink text-paper" : "text-ink-soft hover:text-ink",
-              )}
-            >
-              {d.name}
-            </button>
-          );
-        })}
-      </div>
     </section>
   );
 }

@@ -1,17 +1,15 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { ArrowLeft01Icon, ArrowRight01Icon, MaximizeScreenIcon } from "@hugeicons/core-free-icons";
+import { ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { PageActions } from "@/components/editor/page-actions";
 import { PageStrip } from "@/components/editor/page-strip";
 import { MagazineBook, type BookHandle } from "@/components/magazine";
 import {
   CoverSettings,
-  ReadingSettings,
 } from "@/components/studio/publication-settings";
 import { MaterialSettings } from "@/components/studio/material-settings";
-import { PublishMenu } from "@/components/studio/publish-menu";
 import { ButtonLink } from "@/components/ui/button";
 import { calculateSpreads, findSpread } from "@/lib/spreads";
 import { usePublication } from "@/lib/publication-store";
@@ -20,7 +18,13 @@ import { usePublication } from "@/lib/publication-store";
  * Interactive flip-book preview. The book owns turning (click, swipe,
  * arrow keys); selection follows the visible spread and vice versa.
  */
-function PreviewPanel() {
+function PreviewPanel({
+  stageRef,
+  onFullscreen,
+}: {
+  stageRef: React.RefObject<HTMLDivElement | null>;
+  onFullscreen: () => void;
+}) {
   const { publication, images, selectedId, select } = usePublication();
   const spreads = useMemo(
     () =>
@@ -36,11 +40,6 @@ function PreviewPanel() {
   const index = selectedId ? (findSpread(spreads, selectedId)?.index ?? 0) : 0;
   const spread = spreads[index];
   const bookRef = useRef<BookHandle>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
-  const toggleFullscreen = () =>
-    document.fullscreenElement
-      ? document.exitFullscreen()
-      : stageRef.current?.requestFullscreen();
 
   if (!spread || !publication) return null;
 
@@ -51,23 +50,12 @@ function PreviewPanel() {
     <div
       ref={stageRef}
       style={{ "--page-aspect": publication.pageAspect ?? 0.7071 } as React.CSSProperties}
-      className="relative flex flex-col bg-[radial-gradient(ellipse_at_50%_40%,#f7f3ea,#e9e2d3)] lg:min-h-0 lg:flex-1 [&:fullscreen]:h-screen [&:fullscreen_.book-fit]:[container-type:size]"
+      className="relative flex min-h-[420px] flex-col overflow-hidden rounded-xl border border-line bg-[radial-gradient(ellipse_at_50%_40%,#f7f3ea,#e9e2d3)] lg:min-h-0 lg:flex-1 [&:fullscreen]:h-screen [&:fullscreen_.book-fit]:[container-type:size]"
     >
-      <button
-        type="button"
-        onClick={toggleFullscreen}
-        aria-label="Toggle fullscreen"
-        className="group absolute right-3 top-3 z-30 grid h-8 w-8 place-items-center rounded-md border border-line bg-white/80 text-ink-soft shadow-sm transition hover:border-ink/40 hover:text-ink"
-      >
-        <HugeiconsIcon icon={MaximizeScreenIcon} className="h-4 w-4" />
-        <span
-          aria-hidden
-          className="pointer-events-none absolute right-0 top-full mt-1.5 whitespace-nowrap rounded-md bg-ink px-2 py-1 text-[11px] font-medium text-paper opacity-0 shadow-md transition group-hover:opacity-100"
-        >
-          Fullscreen (Esc to exit)
-        </span>
-      </button>
-      <div className="flex items-center gap-3 px-3 py-8 md:gap-6 md:px-6 lg:min-h-0 lg:flex-1 lg:py-6">
+      <div className="flex justify-end px-3 pt-3 md:px-4">
+        <PageActions onFullscreen={onFullscreen} />
+      </div>
+      <div className="flex min-h-0 flex-1 items-center gap-2 px-2 py-4 md:gap-4 md:px-4 lg:py-4">
         <button
           type="button"
           aria-label="Previous spread"
@@ -91,7 +79,7 @@ function PreviewPanel() {
               const p = s.left ?? s.right;
               if (p) select(p.id);
             }}
-            className="w-full lg:w-[min(96cqw,calc(94cqh*2*var(--page-aspect,0.7071)))] [:fullscreen_&]:w-[min(96cqw,calc(94cqh*2*var(--page-aspect,0.7071)))]"
+            className="w-full lg:w-[min(100cqw,calc(100cqh*2*var(--page-aspect,0.7071)))] [:fullscreen_&]:w-[min(100cqw,calc(100cqh*2*var(--page-aspect,0.7071)))]"
           />
         </div>
         <button
@@ -111,39 +99,13 @@ function PreviewPanel() {
   );
 }
 
-function TitleInput() {
-  const { publication, rename } = usePublication();
-  // Draft lives in local state only; remount per publication via key below.
-  const [draft, setDraft] = useState(publication?.title ?? "");
-  if (!publication) return null;
-
-  const commit = () => {
-    const clean = draft.trim().slice(0, 80);
-    if (clean.length === 0) {
-      setDraft(publication.title);
-    } else {
-      rename(draft);
-      setDraft(clean);
-    }
-  };
-
-  return (
-    <input
-      value={draft}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={commit}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-      }}
-      aria-label="Publication title"
-      spellCheck={false}
-      className="w-full max-w-md rounded-lg bg-transparent font-display text-2xl tracking-[-0.01em] outline-none transition-colors hover:bg-ink/[0.03] focus:bg-ink/[0.03] focus:px-2 md:text-[28px]"
-    />
-  );
-}
-
 export function StudioClient() {
-  const { publication, sourceName } = usePublication();
+  const { publication } = usePublication();
+  const stageRef = useRef<HTMLDivElement>(null);
+  const toggleFullscreen = () =>
+    document.fullscreenElement
+      ? document.exitFullscreen()
+      : stageRef.current?.requestFullscreen();
   const spreads = useMemo(
     () =>
       publication
@@ -180,58 +142,32 @@ export function StudioClient() {
   }
 
   return (
-    <div className="mt-2 flex flex-col lg:min-h-0 lg:flex-1">
-      {/* Studio toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <h1 className="max-w-md">
-            <TitleInput key={publication.id} />
-          </h1>
-          <p className="mt-0.5 text-xs text-muted">
-            {sourceName ?? "Document"} · {publication.pages.length}{" "}
-            {publication.pages.length === 1 ? "page" : "pages"} ·{" "}
-            {spreads.length} {spreads.length === 1 ? "spread" : "spreads"}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <ButtonLink href="/read" variant="secondary" size="sm">
-            Read
-          </ButtonLink>
-          <PublishMenu />
-        </div>
-      </div>
-
+    <div className="flex flex-col lg:min-h-0 lg:flex-1 lg:overflow-hidden">
       {/* Settings column | stage (tools · book · filmstrip). */}
-      <div className="mt-4 grid gap-5 lg:min-h-0 lg:flex-1 lg:grid-cols-[260px_minmax(0,1fr)]">
-        <aside className="rounded-xl border border-line bg-paper lg:overflow-y-auto">
-          <div className="border-b border-line px-4 py-3">
-            <h2 className="text-sm font-semibold text-ink">Book setup</h2>
+      <div className="grid gap-5 lg:min-h-0 lg:flex-1 lg:grid-cols-[260px_minmax(0,1fr)] lg:overflow-hidden">
+        <aside className="rounded-xl border border-line bg-paper lg:min-h-0 lg:overflow-y-auto">
+          <div className="border-b border-line bg-paper-deep/40 px-4 pb-3 pt-4">
+            <h2 className="font-display text-lg font-semibold tracking-[-0.01em] text-ink">Book setup</h2>
             <p className="mt-0.5 text-[11px] text-muted">
               Choose how the book opens and feels.
             </p>
           </div>
           <CoverSettings spreads={spreads} />
-          <ReadingSettings />
           <MaterialSettings />
         </aside>
 
-        <div className="order-first flex flex-col overflow-hidden rounded-xl border border-line bg-paper lg:order-none lg:min-h-0">
-          <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-2.5">
-            <div>
-              <h2 className="text-sm font-semibold text-ink">Preview</h2>
-              <p className="mt-0.5 text-[11px] text-muted">Updates as you edit</p>
-            </div>
-            <span className="font-mono text-[10px] text-muted">
-              {spreads.length} {spreads.length === 1 ? "spread" : "spreads"}
-            </span>
-          </div>
-          <div className="border-b border-line px-4 py-2.5">
-            <PageActions />
-          </div>
-          <PreviewPanel />
-          <div className="border-t border-line px-3 pt-2">
+        <div className="order-first flex min-h-0 flex-col lg:order-none lg:min-h-0 lg:overflow-hidden">
+          <PreviewPanel stageRef={stageRef} onFullscreen={toggleFullscreen} />
+          <div className="mt-3 shrink-0 rounded-xl border border-line bg-paper px-3 pt-2">
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 px-1 pb-1">
-              <h2 className="text-sm font-semibold text-ink">Pages</h2>
+              <h2 className="text-sm font-semibold text-ink">
+                Pages{" "}
+                <span className="ml-1 text-[11px] font-normal text-muted">
+                  {publication.pages.length}{" "}
+                  {publication.pages.length === 1 ? "page" : "pages"} ·{" "}
+                  {spreads.length} {spreads.length === 1 ? "spread" : "spreads"}
+                </span>
+              </h2>
               <p className="text-[11px] text-muted">
                 Click to select. Drag to reorder.
               </p>

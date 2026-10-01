@@ -13,6 +13,7 @@ export type ReadingDirection = "ltr" | "rtl";
 export type PageType = "cover" | "page" | "blank" | "back-cover";
 
 export type MaterialType =
+  | "original"
   | "smooth-matte"
   | "glossy"
   | "premium-matte"

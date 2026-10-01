@@ -6,6 +6,7 @@ import {
   Copy01Icon,
   Delete02Icon,
   FileAddIcon,
+  MaximizeScreenIcon,
   Rotate01Icon,
   UndoIcon,
 } from "@hugeicons/core-free-icons";
@@ -46,7 +47,7 @@ function ActionButton({
 }
 
 /** Actions for the currently selected page. */
-export function PageActions() {
+export function PageActions({ onFullscreen }: { onFullscreen?: () => void }) {
   const {
     publication,
     selectedId,
@@ -75,17 +76,7 @@ export function PageActions() {
   }, [undo]);
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <div className="min-w-0">
-        <p className="text-xs font-semibold text-ink-soft">
-          {page ? `Editing page ${page.position + 1}` : "Select a page"}
-        </p>
-        <p className="mt-0.5 text-[11px] text-muted">
-          {page
-            ? "These tools apply to the selected thumbnail."
-            : "Choose a thumbnail below to edit it."}
-        </p>
-      </div>
+    <div className="flex flex-wrap items-center justify-end gap-1.5">
       <div className="flex flex-wrap items-center gap-1.5">
         <ActionButton
           label="Undo"
@@ -122,6 +113,14 @@ export function PageActions() {
           disabled={!page}
           onClick={() => page && deletePage(page.id)}
         />
+        {onFullscreen && (
+          <ActionButton
+            label="Fullscreen"
+            title="Toggle fullscreen (Esc to exit)"
+            icon={MaximizeScreenIcon}
+            onClick={onFullscreen}
+          />
+        )}
       </div>
     </div>
   );

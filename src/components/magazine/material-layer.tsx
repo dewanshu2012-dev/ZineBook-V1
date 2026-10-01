@@ -17,6 +17,8 @@ export function MaterialLayer({
   className?: string;
 }) {
   const surface = materialSurface(material.type);
+  // Original stock = the untouched document: no tint, grain or sheen.
+  if (material.type === "original") return null;
   return (
     <div aria-hidden className={cn("pointer-events-none absolute inset-0", className)}>
       <div

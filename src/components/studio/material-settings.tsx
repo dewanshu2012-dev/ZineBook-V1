@@ -10,6 +10,14 @@ import { cn } from "@/lib/utils";
 
 function Swatch({ type }: { type: MaterialType }) {
   const surface = materialSurface(type);
+  if (type === "original") {
+    return (
+      <span
+        aria-hidden
+        className="h-6 w-6 shrink-0 rounded-md border border-ink/15 bg-white"
+      />
+    );
+  }
   return (
     <span
       aria-hidden

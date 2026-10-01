@@ -26,6 +26,7 @@ const WEAVE =
   "repeating-linear-gradient(0deg, rgba(60,50,30,.07) 0 1px, transparent 1px 3px), repeating-linear-gradient(90deg, rgba(60,50,30,.06) 0 1px, transparent 1px 3px)";
 
 const SURFACES: Record<MaterialType, MaterialSurface> = {
+  original: { grain: 0, sheen: false, warmth: "#ffffff", ink: "none" },
   "smooth-matte": { grain: 0.6, sheen: false, warmth: "#fbf8f1", ink: "none" },
   glossy: { grain: 0.15, sheen: true, warmth: "#ffffff", ink: "contrast(1.06) saturate(1.15)" },
   "premium-matte": { grain: 0.5, sheen: false, warmth: "#fcfaf4", ink: "contrast(1.12)" },
@@ -53,6 +54,12 @@ export type MaterialGroup = {
  * Matches the spec: magazine paper / cover stock / experimental.
  */
 export const MATERIAL_GROUPS: MaterialGroup[] = [
+  {
+    name: "Original",
+    materials: [
+      { type: "original", label: "Original", hint: "Untouched document look" },
+    ],
+  },
   {
     name: "Magazine paper",
     materials: [
