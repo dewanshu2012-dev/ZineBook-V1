@@ -1,9 +1,6 @@
-import { HugeiconsIcon } from "@hugeicons/react";
-import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { SiteFooter } from "@/components/landing/site-footer";
 import { SiteHeader } from "@/components/landing/site-header";
 import { UploadClient } from "@/components/upload/upload-client";
-import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 
 export default function UploadPage() {
@@ -12,10 +9,6 @@ export default function UploadPage() {
       <SiteHeader />
       <main className="flex-1">
         <Container className="py-12 md:py-16">
-          <ButtonLink href="/" variant="ghost" size="sm" className="-ml-4">
-            <HugeiconsIcon icon={ArrowLeft01Icon} className="h-4 w-4" />
-            Back
-          </ButtonLink>
           <div className="mx-auto mt-8 max-w-2xl text-center">
             <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-muted">
               Create your publication
