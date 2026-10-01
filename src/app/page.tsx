@@ -1,4 +1,5 @@
-import { ArrowRight } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { Craft } from "@/components/landing/craft";
 import { Hero } from "@/components/landing/hero";
 import { Reveal } from "@/components/landing/reveal";
@@ -35,7 +36,7 @@ export default function Home() {
                 <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
                   <ButtonLink href="/upload" size="lg">
                     Create a magazine
-                    <ArrowRight className="h-4 w-4" strokeWidth={2} />
+                    <HugeiconsIcon icon={ArrowRight01Icon} className="h-4 w-4" strokeWidth={2} />
                   </ButtonLink>
                   <ButtonLink href="#craft" variant="secondary" size="lg">
                     Revisit the craft

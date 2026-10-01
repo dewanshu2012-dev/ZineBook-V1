@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import { MagazineBook, type BookHandle } from "@/components/magazine";
 import { MobilePager } from "@/components/reader/mobile-pager";
 import { ReaderControls } from "@/components/reader/reader-controls";
@@ -149,7 +150,7 @@ export function Reader() {
             {publication.title}
           </p>
           <ButtonLink href="/studio" variant="ghost" size="sm">
-            <X className="h-4 w-4" />
+            <HugeiconsIcon icon={Cancel01Icon} className="h-4 w-4" />
             Exit
           </ButtonLink>
         </Container>
@@ -159,7 +160,12 @@ export function Reader() {
       <div className="overflow-auto px-4 pb-32 pt-4 md:px-8">
         <div
           className="mx-auto w-full max-w-4xl origin-top"
-          style={{ transform: `scale(${zoom})` }}
+          style={
+            {
+              transform: `scale(${zoom})`,
+              "--page-aspect": publication.pageAspect ?? 0.7071,
+            } as React.CSSProperties
+          }
         >
           {desktop ? (
             <MagazineBook

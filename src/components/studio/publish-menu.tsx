@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BookOpen, Download, Upload } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { BookOpen01Icon, Download01Icon, Upload01Icon } from "@hugeicons/core-free-icons";
 import { Button, ButtonLink } from "@/components/ui/button";
 import {
   parsePublicationFile,
@@ -101,7 +102,7 @@ export function PublishMenu() {
             role="menuitem"
             className="w-full justify-start"
           >
-            <BookOpen className="h-4 w-4" />
+            <HugeiconsIcon icon={BookOpen01Icon} className="h-4 w-4" />
             Open reader
           </ButtonLink>
           <button
@@ -114,7 +115,7 @@ export function PublishMenu() {
               "text-ink-soft hover:bg-ink/5 hover:text-ink disabled:pointer-events-none disabled:opacity-50",
             )}
           >
-            <Download className="h-4 w-4" />
+            <HugeiconsIcon icon={Download01Icon} className="h-4 w-4" />
             Export .zinebook
           </button>
           <button
@@ -123,7 +124,7 @@ export function PublishMenu() {
             onClick={() => fileRef.current?.click()}
             className="flex h-9 w-full items-center gap-2 rounded-full px-4 text-[13px] font-medium text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink"
           >
-            <Upload className="h-4 w-4" />
+            <HugeiconsIcon icon={Upload01Icon} className="h-4 w-4" />
             Import .zinebook
           </button>
           <input

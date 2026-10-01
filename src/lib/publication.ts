@@ -52,6 +52,8 @@ export type Publication = {
   coverMode: CoverMode;
   readingDirection: ReadingDirection;
   material: PublicationMaterial;
+  /** Source page width ÷ height, so the book matches the document. */
+  pageAspect?: number;
   createdAt: string;
   updatedAt: string;
 };

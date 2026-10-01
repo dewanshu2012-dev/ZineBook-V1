@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowLeft01Icon, ArrowRight01Icon, MaximizeScreenIcon } from "@hugeicons/core-free-icons";
 import { PageActions } from "@/components/editor/page-actions";
 import { PageStrip } from "@/components/editor/page-strip";
-import { MagazineRenderer } from "@/components/magazine/magazine-renderer";
+import { MagazineBook, type BookHandle } from "@/components/magazine";
 import {
   CoverSettings,
   ReadingSettings,
@@ -16,13 +17,11 @@ import { calculateSpreads, findSpread } from "@/lib/spreads";
 import { usePublication } from "@/lib/publication-store";
 
 /**
- * Spread preview powered by the magazine rendering engine (Milestone 7).
- * Shows the spread containing the selection — the engine decides whether
- * it is a closed cover or an open spread.
+ * Interactive flip-book preview. The book owns turning (click, swipe,
+ * arrow keys); selection follows the visible spread and vice versa.
  */
 function PreviewPanel() {
   const { publication, images, selectedId, select } = usePublication();
-  const pages = useMemo(() => publication?.pages ?? [], [publication]);
   const spreads = useMemo(
     () =>
       publication
@@ -34,56 +33,80 @@ function PreviewPanel() {
         : [],
     [publication],
   );
-  const spread = selectedId ? findSpread(spreads, selectedId) : undefined;
-  const selIdx = pages.findIndex((p) => p.id === selectedId);
+  const index = selectedId ? (findSpread(spreads, selectedId)?.index ?? 0) : 0;
+  const spread = spreads[index];
+  const bookRef = useRef<BookHandle>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const toggleFullscreen = () =>
+    document.fullscreenElement
+      ? document.exitFullscreen()
+      : stageRef.current?.requestFullscreen();
 
-  // Arrow keys move selection across the whole publication.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
-      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-      if (pages.length === 0) return;
-      e.preventDefault();
-      const next =
-        e.key === "ArrowRight"
-          ? Math.min(pages.length - 1, (selIdx < 0 ? -1 : selIdx) + 1)
-          : Math.max(0, (selIdx < 0 ? pages.length : selIdx) - 1);
-      select(pages[next].id);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [pages, selIdx, select]);
+  if (!spread || !publication) return null;
 
-  if (!spread || !publication) {
-    return (
-      <div className="flex h-full min-h-[320px] items-center justify-center rounded-xl border border-dashed border-line text-sm text-muted">
-        Select a page to preview its spread.
-      </div>
-    );
-  }
+  const arrow =
+    "grid h-10 w-10 shrink-0 place-items-center rounded-full border border-line bg-white/80 text-ink-soft shadow-sm transition hover:border-ink/40 hover:text-ink disabled:opacity-30";
 
   return (
-    <div className="overflow-hidden rounded-xl border border-line bg-white">
-      <div className="flex min-h-[380px] items-center justify-center bg-paper-deep/40 px-4 py-10 md:min-h-[520px] md:px-8">
-        {spread.kind !== "interior" && (
-          <p className="sr-only">
-            {spread.kind === "cover" ? "Front cover" : "Back cover"}
-          </p>
-        )}
-        <MagazineRenderer
-          spread={spread}
-          images={images}
-          material={publication.material}
-          className="w-full max-w-[560px]"
-        />
+    <div
+      ref={stageRef}
+      style={{ "--page-aspect": publication.pageAspect ?? 0.7071 } as React.CSSProperties}
+      className="relative flex flex-col bg-[radial-gradient(ellipse_at_50%_40%,#f7f3ea,#e9e2d3)] lg:min-h-0 lg:flex-1 [&:fullscreen]:h-screen [&:fullscreen_.book-fit]:[container-type:size]"
+    >
+      <button
+        type="button"
+        onClick={toggleFullscreen}
+        aria-label="Toggle fullscreen"
+        className="group absolute right-3 top-3 z-30 grid h-8 w-8 place-items-center rounded-md border border-line bg-white/80 text-ink-soft shadow-sm transition hover:border-ink/40 hover:text-ink"
+      >
+        <HugeiconsIcon icon={MaximizeScreenIcon} className="h-4 w-4" />
+        <span
+          aria-hidden
+          className="pointer-events-none absolute right-0 top-full mt-1.5 whitespace-nowrap rounded-md bg-ink px-2 py-1 text-[11px] font-medium text-paper opacity-0 shadow-md transition group-hover:opacity-100"
+        >
+          Fullscreen (Esc to exit)
+        </span>
+      </button>
+      <div className="flex items-center gap-3 px-3 py-8 md:gap-6 md:px-6 lg:min-h-0 lg:flex-1 lg:py-6">
+        <button
+          type="button"
+          aria-label="Previous spread"
+          onClick={() => bookRef.current?.prev()}
+          disabled={index === 0}
+          className={arrow}
+        >
+          <HugeiconsIcon icon={ArrowLeft01Icon} className="h-5 w-5" />
+        </button>
+        {/* Size container: the book takes the largest A4 spread that fits
+            both width and height, so the stage never scrolls. */}
+        <div className="book-fit flex min-w-0 flex-1 items-center justify-center self-stretch lg:[container-type:size]">
+          <MagazineBook
+            ref={bookRef}
+            spreads={spreads}
+            images={images}
+            material={publication.material}
+            index={index}
+            onIndexChange={(i) => {
+              const s = spreads[i];
+              const p = s.left ?? s.right;
+              if (p) select(p.id);
+            }}
+            className="w-full lg:w-[min(96cqw,calc(94cqh*2*var(--page-aspect,0.7071)))] [:fullscreen_&]:w-[min(96cqw,calc(94cqh*2*var(--page-aspect,0.7071)))]"
+          />
+        </div>
+        <button
+          type="button"
+          aria-label="Next spread"
+          onClick={() => bookRef.current?.next()}
+          disabled={index === spreads.length - 1}
+          className={arrow}
+        >
+          <HugeiconsIcon icon={ArrowRight01Icon} className="h-5 w-5" />
+        </button>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line px-4 py-2.5">
-        <p className="font-mono text-[11px] text-muted">
-          Spread {spread.index + 1} of {spreads.length} · {spread.kind}
-        </p>
-        <p className="font-mono text-[11px] text-muted">← → to browse</p>
-      </div>
+      <p className="pb-2 text-center font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
+        Spread {index + 1} of {spreads.length} · {spread.kind.replace("-", " ")}
+      </p>
     </div>
   );
 }
@@ -143,13 +166,13 @@ export function StudioClient() {
           No pages yet.
         </h1>
         <p className="mx-auto mt-4 max-w-md text-[15px] leading-7 text-muted">
-          Upload a PDF or some images first — your pages will appear here for
+          Upload a PDF or some images first. Your pages will appear here for
           arranging, covers and materials.
         </p>
         <div className="mt-8">
           <ButtonLink href="/upload" size="lg">
             Go to upload
-            <ArrowRight className="h-4 w-4" strokeWidth={2} />
+            <HugeiconsIcon icon={ArrowRight01Icon} className="h-4 w-4" strokeWidth={2} />
           </ButtonLink>
         </div>
       </div>
@@ -157,12 +180,14 @@ export function StudioClient() {
   }
 
   return (
-    <div className="mt-6">
+    <div className="mt-2 flex flex-col lg:min-h-0 lg:flex-1">
       {/* Studio toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <TitleInput key={publication.id} />
-          <p className="mt-0.5 font-mono text-[11px] uppercase tracking-[0.16em] text-muted">
+          <h1 className="max-w-md">
+            <TitleInput key={publication.id} />
+          </h1>
+          <p className="mt-0.5 text-xs text-muted">
             {sourceName ?? "Document"} · {publication.pages.length}{" "}
             {publication.pages.length === 1 ? "page" : "pages"} ·{" "}
             {spreads.length} {spreads.length === 1 ? "spread" : "spreads"}
@@ -176,34 +201,43 @@ export function StudioClient() {
         </div>
       </div>
 
-      {/* Three-pane workspace:
-          mobile = stacked (preview first, strip as horizontal rail),
-          tablet = strip + preview with settings in a 3-up row,
-          desktop = full three panes. */}
-      <div className="mt-5 grid items-start gap-4 md:grid-cols-[240px_minmax(0,1fr)] lg:grid-cols-[300px_minmax(0,1fr)_280px]">
-        {/* Left — page list */}
-        <div className="space-y-3">
-          <PageActions />
-          <div className="rounded-xl border border-line bg-paper p-2.5">
-            <p className="px-1 pb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-              Pages — drag to reorder
+      {/* Settings column | stage (tools · book · filmstrip). */}
+      <div className="mt-4 grid gap-5 lg:min-h-0 lg:flex-1 lg:grid-cols-[260px_minmax(0,1fr)]">
+        <aside className="rounded-xl border border-line bg-paper lg:overflow-y-auto">
+          <div className="border-b border-line px-4 py-3">
+            <h2 className="text-sm font-semibold text-ink">Book setup</h2>
+            <p className="mt-0.5 text-[11px] text-muted">
+              Choose how the book opens and feels.
             </p>
-            <div className="md:max-h-[60vh] md:overflow-y-auto md:pr-0.5 lg:max-h-[calc(100vh-320px)]">
-              <PageStrip />
-            </div>
           </div>
-        </div>
-
-        {/* Center — spread preview (first on mobile) */}
-        <div className="order-first md:order-none">
-          <PreviewPanel />
-        </div>
-
-        {/* Right — settings */}
-        <div className="grid gap-3 md:col-span-2 lg:col-span-1 lg:grid-cols-1 md:grid-cols-3">
           <CoverSettings spreads={spreads} />
           <ReadingSettings />
           <MaterialSettings />
+        </aside>
+
+        <div className="order-first flex flex-col overflow-hidden rounded-xl border border-line bg-paper lg:order-none lg:min-h-0">
+          <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-2.5">
+            <div>
+              <h2 className="text-sm font-semibold text-ink">Preview</h2>
+              <p className="mt-0.5 text-[11px] text-muted">Updates as you edit</p>
+            </div>
+            <span className="font-mono text-[10px] text-muted">
+              {spreads.length} {spreads.length === 1 ? "spread" : "spreads"}
+            </span>
+          </div>
+          <div className="border-b border-line px-4 py-2.5">
+            <PageActions />
+          </div>
+          <PreviewPanel />
+          <div className="border-t border-line px-3 pt-2">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 px-1 pb-1">
+              <h2 className="text-sm font-semibold text-ink">Pages</h2>
+              <p className="text-[11px] text-muted">
+                Click to select. Drag to reorder.
+              </p>
+            </div>
+            <PageStrip />
+          </div>
         </div>
       </div>
     </div>

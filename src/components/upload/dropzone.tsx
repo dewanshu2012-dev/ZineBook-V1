@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { FileUp } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { FileAddIcon } from "@hugeicons/core-free-icons";
 import { ACCEPT } from "@/lib/pdf";
 import { cn } from "@/lib/utils";
 
@@ -48,7 +49,7 @@ export function Dropzone({
         disabled && "pointer-events-none opacity-60",
       )}
     >
-      <FileUp className="mx-auto h-8 w-8 text-muted" strokeWidth={1.5} />
+      <HugeiconsIcon icon={FileAddIcon} className="mx-auto h-8 w-8 text-muted" strokeWidth={1.5} />
       <p className="mt-4 text-[15px] font-medium">
         {dragging ? "Release to upload" : "Drop your PDF here"}
       </p>

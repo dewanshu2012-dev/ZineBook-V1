@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Play } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowRight01Icon, PlayIcon } from "@hugeicons/core-free-icons";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { Eyebrow } from "@/components/ui/section-heading";
@@ -28,10 +29,10 @@ export function Hero() {
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
             <ButtonLink href="/upload" size="lg">
               Create a magazine
-              <ArrowRight className="h-4 w-4" strokeWidth={2} />
+              <HugeiconsIcon icon={ArrowRight01Icon} className="h-4 w-4" strokeWidth={2} />
             </ButtonLink>
             <ButtonLink href="#craft" variant="secondary" size="lg">
-              <Play className="h-4 w-4" strokeWidth={2} />
+              <HugeiconsIcon icon={PlayIcon} className="h-4 w-4" strokeWidth={2} />
               View example
             </ButtonLink>
           </div>

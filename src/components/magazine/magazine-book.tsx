@@ -1,6 +1,13 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import {
+  animate,
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useTransform,
+  type MotionValue,
+} from "framer-motion";
 import {
   useCallback,
   useEffect,
@@ -20,9 +27,15 @@ import { cn } from "@/lib/utils";
 
 type Turn = { dir: 1 | -1; from: number; to: number };
 
-const TURN_DURATION = 0.9;
-const TURN_EASE = [0.32, 0.72, 0.35, 1] as const;
+const TURN_DURATION = 0.7;
+// Quick lift, long soft settle — like a page dropping onto the stack.
+const TURN_EASE = [0.3, 0.1, 0.2, 1] as const;
 const SWIPE_PX = 60;
+
+// Shadows are spine-anchored gradients; only their opacity animates.
+const ink = (a: number) => `rgba(22,19,14,${a})`;
+const spineShade = (towards: "left" | "right") =>
+  `linear-gradient(to ${towards}, ${ink(0.55)}, ${ink(0.18)} 30%, ${ink(0)} 70%)`;
 
 function LeafFace({
   page,
@@ -30,17 +43,14 @@ function LeafFace({
   material,
   side,
   children,
-  shadeFrom,
-  shadeTo,
+  shade,
 }: {
   page: Page | null;
   image?: PageImage;
   material: PublicationMaterial;
   side: "left" | "right";
   children?: ReactNode;
-  /** Darkening travels with the flip: front 0→.45, back .45→0. */
-  shadeFrom: number;
-  shadeTo: number;
+  shade: MotionValue<number>;
 }) {
   return (
     <div className="absolute inset-0 overflow-hidden bg-[#fffdf8]">
@@ -55,27 +65,25 @@ function LeafFace({
           {children}
         </MagazinePage>
       ) : (
-        <div className="flex h-full items-center justify-center bg-paper-deep/40">
-          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
-            Empty
-          </span>
-        </div>
+        <div className="h-full bg-paper-deep/40" />
       )}
+      {/* Light falls off as the leaf turns away from the viewer. */}
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-ink"
-        initial={{ opacity: shadeFrom }}
-        animate={{ opacity: shadeTo }}
-        transition={{ duration: TURN_DURATION, ease: [...TURN_EASE] }}
+        className="pointer-events-none absolute inset-0"
+        style={{
+          opacity: shade,
+          background: spineShade(side === "right" ? "right" : "left"),
+        }}
       />
     </div>
   );
 }
 
 /**
- * Rigid flat leaf (fallback). Used when a turning page is rotated or
- * carries custom React content, which the background-sliced curl cannot
- * reproduce without snapping at landing.
+ * Rigid leaf rotating around the spine. One progress value (0→1) drives
+ * rotation and every shadow, so they can never drift apart, and only
+ * transform/opacity change per frame (compositor-only, no repaints).
  */
 function FlatLeaf({
   dir,
@@ -100,55 +108,76 @@ function FlatLeaf({
   content?: Record<string, ReactNode>;
   onDone: () => void;
 }) {
+  const p = useMotionValue(0);
+  const rotateY = useTransform(p, [0, 1], [0, dir === 1 ? -180 : 180]);
+  // Leaf faces darken toward edge-on (p = .5), then lighten as it lands.
+  const frontShade = useTransform(p, [0, 0.5], [0, 0.5]);
+  const backShade = useTransform(p, [0.5, 1], [0.5, 0]);
+  // Shadow on the page being uncovered: strong at lift-off, gone by edge-on.
+  const fromShadow = useTransform(p, [0, 0.08, 0.5], [0, 0.6, 0]);
+  // Shadow cast onto the page the leaf lands on: builds, then closes up.
+  const toShadow = useTransform(p, [0.5, 0.88, 1], [0, 0.55, 0]);
+
+  const done = useRef(onDone);
+  useEffect(() => {
+    done.current = onDone;
+  });
+  useEffect(() => {
+    const controls = animate(p, 1, {
+      duration: TURN_DURATION,
+      ease: [...TURN_EASE],
+      onComplete: () => done.current(),
+    });
+    return () => controls.stop();
+  }, [p]);
+
+  const leafSide = dir === 1 ? "right" : "left";
+  const landSide = dir === 1 ? "left" : "right";
+
   return (
     <div
       aria-hidden
-      className={cn(
-        "absolute inset-y-0 z-10 w-1/2",
-        dir === 1 ? "right-0" : "left-0",
-      )}
-      style={{ perspective: "2200px" }}
+      className="pointer-events-none absolute inset-0 z-10"
+      style={{ perspective: "2400px" }}
     >
       <motion.div
-        className="relative h-full w-full"
+        className={cn("absolute inset-y-0 w-1/2", leafSide === "right" ? "right-0" : "left-0")}
+        style={{ opacity: fromShadow, background: spineShade(leafSide) }}
+      />
+      <motion.div
+        className={cn("absolute inset-y-0 w-1/2", landSide === "right" ? "right-0" : "left-0")}
+        style={{ opacity: toShadow, background: spineShade(landSide) }}
+      />
+      <motion.div
+        className={cn("absolute inset-y-0 w-1/2", leafSide === "right" ? "right-0" : "left-0")}
         style={{
+          rotateY,
           transformStyle: "preserve-3d",
           transformOrigin: dir === 1 ? "left center" : "right center",
+          willChange: "transform",
         }}
-        initial={{ rotateY: 0 }}
-        animate={{ rotateY: dir === 1 ? -180 : 180 }}
-        transition={{ duration: TURN_DURATION, ease: [...TURN_EASE] }}
-        onAnimationComplete={onDone}
       >
-        <div
-          className="absolute inset-0"
-          style={{ backfaceVisibility: "hidden" }}
-        >
+        <div className="absolute inset-0" style={{ backfaceVisibility: "hidden" }}>
           <LeafFace
             page={frontPage}
             image={frontImage}
             material={material}
             side={frontSide}
-            shadeFrom={0}
-            shadeTo={0.45}
+            shade={frontShade}
           >
             {frontPage ? content?.[frontPage.id] : undefined}
           </LeafFace>
         </div>
         <div
           className="absolute inset-0"
-          style={{
-            backfaceVisibility: "hidden",
-            transform: "rotateY(180deg)",
-          }}
+          style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
         >
           <LeafFace
             page={backPage}
             image={backImage}
             material={material}
             side={backSide}
-            shadeFrom={0.45}
-            shadeTo={0}
+            shade={backShade}
           >
             {backPage ? content?.[backPage.id] : undefined}
           </LeafFace>
@@ -356,7 +385,7 @@ export function MagazineBook({
       {/* Base spread: the committed state. Frozen for the whole turn —
           the stationary page lives here and is never touched mid-turn. */}
       <MagazineRenderer
-        key={baseSpread.id}
+        key={`base-${baseSpread.id}`}
         spread={baseSpread}
         images={images}
         material={material}
@@ -369,7 +398,7 @@ export function MagazineBook({
           opened full and lifted only once the base reports painted. */}
       {reveal && (
         <div
-          key={spreads[reveal.to].id}
+          key={`reveal-${spreads[reveal.to].id}`}
           aria-hidden
           className="absolute inset-0 z-[5] overflow-hidden rounded-[4px]"
           style={{

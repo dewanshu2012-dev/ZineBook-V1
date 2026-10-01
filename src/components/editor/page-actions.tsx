@@ -1,56 +1,51 @@
 "use client";
 
+import { useEffect } from "react";
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import {
-  Copy,
-  FilePlus2,
-  PanelBottom,
-  PanelTop,
-  RotateCw,
-  Square,
-  Trash2,
-} from "lucide-react";
+  Copy01Icon,
+  Delete02Icon,
+  FileAddIcon,
+  Rotate01Icon,
+  UndoIcon,
+} from "@hugeicons/core-free-icons";
 import { usePublication } from "@/lib/publication-store";
-import type { PageType } from "@/lib/publication";
 import { cn } from "@/lib/utils";
 
 function ActionButton({
   label,
   title,
+  icon,
   onClick,
-  active,
   danger,
+  disabled,
 }: {
   label: string;
   title: string;
+  icon: IconSvgElement;
   onClick: () => void;
-  active?: boolean;
   danger?: boolean;
-  icon: React.ReactNode;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
-      title={title}
       aria-label={title}
-      aria-pressed={active}
+      title={title}
       onClick={onClick}
+      disabled={disabled}
       className={cn(
-        "flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors",
-        active
-          ? "border-ink bg-ink text-paper"
-          : "border-line bg-paper text-ink-soft hover:border-ink/40 hover:text-ink",
-        danger && !active && "hover:border-red-900/30 hover:text-red-900",
+        "flex h-7 items-center gap-1 rounded-md border border-line bg-paper px-1.5 text-[10px] font-medium text-ink-soft transition-colors hover:border-ink/40 hover:text-ink disabled:pointer-events-none disabled:opacity-40",
+        danger && "hover:border-red-900/30 hover:text-red-900",
       )}
     >
-      {icon}
-      <span className="hidden sm:inline">{label}</span>
+      <HugeiconsIcon icon={icon} className="h-3 w-3" />
+      <span>{label}</span>
     </button>
   );
 }
 
-const icon = "h-3.5 w-3.5";
-
-/** Actions for the currently selected page (Milestone 4). */
+/** Actions for the currently selected page. */
 export function PageActions() {
   const {
     publication,
@@ -59,75 +54,75 @@ export function PageActions() {
     rotatePage,
     deletePage,
     insertBlank,
-    setPageType,
+    undo,
+    canUndo,
   } = usePublication();
 
   const page = publication?.pages.find((p) => p.id === selectedId);
 
-  const setType = (type: PageType) => {
-    if (page) setPageType(page.id, type);
-  };
+  // ⌘Z / Ctrl+Z (ignored while typing).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) return;
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        undo();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [undo]);
 
   return (
-    <div className="rounded-xl border border-line bg-paper p-2.5">
-      <p className="px-1 pb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-        {page ? `Page ${page.position + 1} — ${page.type}` : "No page selected"}
-      </p>
-      <div className="flex flex-wrap gap-1.5">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="min-w-0">
+        <p className="text-xs font-semibold text-ink-soft">
+          {page ? `Editing page ${page.position + 1}` : "Select a page"}
+        </p>
+        <p className="mt-0.5 text-[11px] text-muted">
+          {page
+            ? "These tools apply to the selected thumbnail."
+            : "Choose a thumbnail below to edit it."}
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <ActionButton
+          label="Undo"
+          title="Undo last change"
+          icon={UndoIcon}
+          disabled={!canUndo}
+          onClick={undo}
+        />
         <ActionButton
           label="Duplicate"
           title="Duplicate selected page"
-          icon={<Copy className={icon} />}
+          icon={Copy01Icon}
+          disabled={!page}
           onClick={() => page && duplicatePage(page.id)}
         />
         <ActionButton
           label="Rotate"
-          title="Rotate 90° clockwise"
-          icon={<RotateCw className={icon} />}
+          title="Rotate selected page 90° clockwise"
+          icon={Rotate01Icon}
+          disabled={!page}
           onClick={() => page && rotatePage(page.id)}
+        />
+        <ActionButton
+          label="Add page"
+          title="Insert a blank page after the selected page"
+          icon={FileAddIcon}
+          onClick={() => insertBlank()}
         />
         <ActionButton
           label="Delete"
           title="Delete selected page"
           danger
-          icon={<Trash2 className={icon} />}
+          icon={Delete02Icon}
+          disabled={!page}
           onClick={() => page && deletePage(page.id)}
         />
-        <span className="mx-0.5 w-px self-stretch bg-line" aria-hidden />
-        <ActionButton
-          label="Cover"
-          title="Set as front cover"
-          active={page?.type === "cover"}
-          icon={<PanelTop className={icon} />}
-          onClick={() => setType("cover")}
-        />
-        <ActionButton
-          label="Back"
-          title="Set as back cover"
-          active={page?.type === "back-cover"}
-          icon={<PanelBottom className={icon} />}
-          onClick={() => setType("back-cover")}
-        />
-        <ActionButton
-          label="Page"
-          title="Mark as interior page"
-          active={page?.type === "page"}
-          icon={<Square className={icon} />}
-          onClick={() => setType("page")}
-        />
-        <span className="mx-0.5 w-px self-stretch bg-line" aria-hidden />
-        <ActionButton
-          label="Blank"
-          title="Insert blank page after selection"
-          icon={<FilePlus2 className={icon} />}
-          onClick={() => insertBlank()}
-        />
       </div>
-      {!page && (
-        <p className="px-1 pt-2 text-xs text-muted">
-          Select a page in the strip to edit it.
-        </p>
-      )}
     </div>
   );
 }

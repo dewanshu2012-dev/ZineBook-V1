@@ -26,7 +26,7 @@ export const MAX_IMAGE_FILES = 50;
 /** Strip/grid long-edge target (px). */
 const THUMB_EDGE = 480;
 /** Studio preview / reader long-edge target (px). */
-const PREVIEW_EDGE = 1200;
+const PREVIEW_EDGE = 2200;
 
 export type ValidatedSelection =
   | { kind: "pdf"; file: File }
@@ -116,7 +116,7 @@ function renderBoth(
 ): { thumbnail: string; preview: string } {
   return {
     thumbnail: renderSized(source, srcW, srcH, THUMB_EDGE, 0.78),
-    preview: renderSized(source, srcW, srcH, PREVIEW_EDGE, 0.85),
+    preview: renderSized(source, srcW, srcH, PREVIEW_EDGE, 0.92),
   };
 }
 
@@ -146,8 +146,8 @@ export async function extractPdfPages(
     onProgress(n - 1, pdf.numPages, `Rendering page ${n} of ${pdf.numPages}…`);
     const page = await pdf.getPage(n);
     const viewport = page.getViewport({ scale: 1 });
-    // Raster at 2x for crisp thumbs, then downscale into the thumbnail.
-    const hires = page.getViewport({ scale: 2 });
+    // Raster at 3x so previews stay sharp on retina, then downscale.
+    const hires = page.getViewport({ scale: 3 });
     const canvas = document.createElement("canvas");
     canvas.width = Math.floor(hires.width);
     canvas.height = Math.floor(hires.height);

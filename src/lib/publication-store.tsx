@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -22,7 +23,6 @@ import {
   type CoverMode,
   type MaterialType,
   type Page,
-  type PageType,
   type Publication,
   type PublicationMaterial,
   type ReadingDirection,
@@ -49,7 +49,6 @@ type PublicationState = {
   duplicatePage: (id: string) => void;
   rotatePage: (id: string) => void;
   insertBlank: (atIndex?: number) => void;
-  setPageType: (id: string, type: PageType) => void;
   setCoverMode: (mode: CoverMode) => void;
   setReadingDirection: (dir: ReadingDirection) => void;
   rename: (title: string) => void;
@@ -58,6 +57,9 @@ type PublicationState = {
     key: "textureIntensity" | "pageDepth" | "shadowIntensity",
     value: number,
   ) => void;
+  /** Step back one edit (pages, covers, material…). */
+  undo: () => void;
+  canUndo: boolean;
   /** Replace working state with an imported/exported snapshot. */
   restoreSnapshot: (
     publication: Publication,
@@ -77,7 +79,7 @@ function uid(prefix: string): string {
 
 function readShell(): Publication | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(STORAGE_KEY);
     return raw ? (JSON.parse(raw) as Publication) : null;
   } catch {
     return null;
@@ -89,15 +91,40 @@ function ordered(pages: Page[]): Page[] {
   return pages.map((p, i) => ({ ...p, position: i }));
 }
 
+function syncCoverTypes(pages: Page[], mode: CoverMode): Page[] {
+  const lastIndex = pages.length - 1;
+  return pages.map((p, i) => {
+    if (p.type === "blank") return p;
+    if (mode === "none") return { ...p, type: "page" };
+    if (i === 0) return { ...p, type: "cover" };
+    if (mode === "full" && lastIndex > 0 && i === lastIndex) {
+      return { ...p, type: "back-cover" };
+    }
+    return { ...p, type: "page" };
+  });
+}
+
 function touched(pub: Publication, pages: Page[]): Publication {
   return { ...pub, pages: ordered(pages), updatedAt: new Date().toISOString() };
 }
 
+function touchedWithCoverMode(
+  pub: Publication,
+  pages: Page[],
+  mode = pub.coverMode,
+): Publication {
+  return {
+    ...touched(pub, pages),
+    pages: syncCoverTypes(ordered(pages), mode),
+    coverMode: mode,
+  };
+}
+
 export function PublicationProvider({ children }: { children: ReactNode }) {
   // Lazy boot state reads the persisted shell once — no render-loop effect.
-  // Guarded for prerender, where localStorage does not exist.
+  // Guarded for prerender, where window does not exist.
   const [boot] = useState<{ shell: Publication | null }>(() => ({
-    shell: typeof localStorage === "undefined" ? null : readShell(),
+    shell: typeof window === "undefined" ? null : readShell(),
   }));
   const [publication, setPublication] = useState<Publication | null>(boot.shell);
   const [images, setImages] = useState<Record<string, PageImage>>({});
@@ -124,14 +151,65 @@ export function PublicationProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Older publications lack pageAspect: measure the first page image once.
+  useEffect(() => {
+    if (!publication || publication.pageAspect) return;
+    const src = images[publication.pages[0]?.id]?.preview;
+    if (!src) return;
+    const img = new window.Image();
+    img.onload = () =>
+      setPublication((p) =>
+        p && !p.pageAspect ? { ...p, pageAspect: img.naturalWidth / img.naturalHeight } : p,
+      );
+    img.src = src;
+  }, [publication, images]);
+
+  // Undo history: every publication change pushes the state before it.
+  // ponytail: rapid edits (slider drags) within 400ms coalesce into one step.
+  type Snap = { publication: Publication; images: Record<string, PageImage> };
+  const history = useRef<Snap[]>([]);
+  const last = useRef<{ snap: Snap | null; at: number; undoing: boolean }>({
+    snap: null,
+    at: 0,
+    undoing: false,
+  });
+  const [canUndo, setCanUndo] = useState(false);
+  useEffect(() => {
+    const l = last.current;
+    const prev = l.snap;
+    const now = Date.now();
+    if (!publication || !prev || prev.publication.id !== publication.id) {
+      history.current = []; // new/cleared/imported publication
+    } else if (!l.undoing && prev.publication !== publication && now - l.at > 400) {
+      history.current = [...history.current.slice(-49), prev];
+    }
+    if (prev?.publication !== publication && !l.undoing) l.at = now;
+    l.undoing = false;
+    l.snap = publication ? { publication, images } : null;
+    setCanUndo(history.current.length > 0);
+  }, [publication, images]);
+
+  const undo = useCallback(() => {
+    const snap = history.current.pop();
+    if (!snap) return;
+    last.current.undoing = true;
+    setPublication(snap.publication);
+    setImages(snap.images);
+    setSelectedId((id) =>
+      snap.publication.pages.some((p) => p.id === id)
+        ? id
+        : (snap.publication.pages[0]?.id ?? null),
+    );
+  }, []);
+
   // Persist the lean shell on every mutation. Write-only effect.
   useEffect(() => {
-    if (!hydrated || typeof localStorage === "undefined") return;
+    if (!hydrated || typeof window === "undefined") return;
     try {
       if (publication) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(publication));
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(publication));
       } else {
-        localStorage.removeItem(STORAGE_KEY);
+        window.localStorage.removeItem(STORAGE_KEY);
       }
     } catch {
       /* quota or private mode — session still works in memory */
@@ -145,12 +223,13 @@ export function PublicationProvider({ children }: { children: ReactNode }) {
         id: uid("pg"),
         sourcePageNumber: p.sourcePageNumber,
         position: i,
-        type: "page" as const,
+        type: i === 0 ? "cover" : ("page" as const),
         rotation: 0,
       }));
       const next: Publication = {
         ...base,
         pages,
+        pageAspect: extracted[0] ? extracted[0].width / extracted[0].height : undefined,
         updatedAt: new Date().toISOString(),
       };
       const imgs: Record<string, PageImage> = {};
@@ -207,7 +286,7 @@ export function PublicationProvider({ children }: { children: ReactNode }) {
       const next = [...prev.pages];
       const [moved] = next.splice(from, 1);
       next.splice(to, 0, moved);
-      return touched(prev, next);
+      return touchedWithCoverMode(prev, next);
     });
   }, []);
 
@@ -219,7 +298,7 @@ export function PublicationProvider({ children }: { children: ReactNode }) {
       const next = publication.pages.filter((p) => p.id !== id);
       // Move selection to the neighbour that slides into place.
       setSelectedId(next[Math.min(idx, next.length - 1)]?.id ?? null);
-      setPublication(touched(publication, next));
+      setPublication(touchedWithCoverMode(publication, next));
       setImages((prev) => {
         if (!(id in prev)) return prev;
         const rest = { ...prev };
@@ -238,7 +317,7 @@ export function PublicationProvider({ children }: { children: ReactNode }) {
       const idx = publication.pages.findIndex((p) => p.id === id);
       const next = [...publication.pages];
       next.splice(idx + 1, 0, copy);
-      setPublication(touched(publication, next));
+      setPublication(touchedWithCoverMode(publication, next));
       const img = images[id];
       if (img) {
         const imgCopy = { ...img, id: copy.id };
@@ -273,39 +352,17 @@ export function PublicationProvider({ children }: { children: ReactNode }) {
       const blank = { ...createBlankPage(0), id: uid("blank") };
       const next = [...publication.pages];
       next.splice(Math.max(0, Math.min(idx, next.length)), 0, blank);
-      setPublication(touched(publication, next));
+      setPublication(touchedWithCoverMode(publication, next));
       setSelectedId(blank.id);
     },
     [publication, selectedId],
   );
 
-  const setPageType = useCallback(
-    (id: string, type: PageType) => {
-      if (!publication) return;
-      // Front and back covers are unique — demote the previous holder.
-      const next = publication.pages.map((p) => {
-        if (p.id === id) return { ...p, type };
-        if (
-          (type === "cover" || type === "back-cover") &&
-          p.type === type
-        ) {
-          return { ...p, type: "page" as PageType };
-        }
-        return p;
-      });
-      setPublication(touched(publication, next));
-    },
-    [publication],
-  );
-
   const setCoverMode = useCallback(
     (mode: CoverMode) => {
       if (!publication || publication.coverMode === mode) return;
-      setPublication({
-        ...publication,
-        coverMode: mode,
-        updatedAt: new Date().toISOString(),
-      });
+
+      setPublication(touchedWithCoverMode(publication, publication.pages, mode));
     },
     [publication],
   );
@@ -383,13 +440,14 @@ export function PublicationProvider({ children }: { children: ReactNode }) {
       duplicatePage,
       rotatePage,
       insertBlank,
-      setPageType,
       setCoverMode,
       setReadingDirection,
       rename,
       setMaterialType,
       setMaterialValue,
       restoreSnapshot,
+      undo,
+      canUndo,
     }),
     [
       publication,
@@ -405,13 +463,14 @@ export function PublicationProvider({ children }: { children: ReactNode }) {
       duplicatePage,
       rotatePage,
       insertBlank,
-      setPageType,
       setCoverMode,
       setReadingDirection,
       rename,
       setMaterialType,
       setMaterialValue,
       restoreSnapshot,
+      undo,
+      canUndo,
     ],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

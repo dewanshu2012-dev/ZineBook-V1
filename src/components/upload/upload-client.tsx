@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { AlertCircle, ArrowRight, RotateCcw } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { AlertCircleIcon, ArrowRight01Icon, RotateCcwIcon } from "@hugeicons/core-free-icons";
 import { Button, ButtonLink } from "@/components/ui/button";
 import {
   extractImagePages,
@@ -88,13 +89,13 @@ export function UploadClient() {
           <div className="flex flex-col items-center justify-between gap-3 rounded-2xl border border-line bg-paper-deep/40 px-6 py-5 sm:flex-row">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="sm" onClick={startOver}>
-                <RotateCcw className="h-4 w-4" />
+                <HugeiconsIcon icon={RotateCcwIcon} className="h-4 w-4" />
                 Start over
               </Button>
             </div>
             <ButtonLink href="/studio" size="md">
               Open in Setup Studio
-              <ArrowRight className="h-4 w-4" strokeWidth={2} />
+              <HugeiconsIcon icon={ArrowRight01Icon} className="h-4 w-4" strokeWidth={2} />
             </ButtonLink>
           </div>
           <p className="text-center font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
@@ -112,7 +113,7 @@ export function UploadClient() {
           className="mt-6 flex items-start gap-3 rounded-xl border border-red-900/20 bg-red-50 px-5 py-4 text-sm text-red-950"
           role="alert"
         >
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <HugeiconsIcon icon={AlertCircleIcon} className="mt-0.5 h-4 w-4 shrink-0" />
           <p>{error}</p>
         </div>
       )}
