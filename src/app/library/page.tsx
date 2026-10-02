@@ -1,5 +1,6 @@
 import { SiteFooter } from "@/components/landing/site-footer";
 import { SiteHeader } from "@/components/landing/site-header";
+import { CloudLibrary } from "@/components/library/cloud-library";
 import { LibraryClient } from "@/components/library/library-client";
 import { Container } from "@/components/ui/container";
 
@@ -17,10 +18,11 @@ export default function LibraryPage() {
               Library.
             </h1>
             <p className="mx-auto mt-4 max-w-lg text-[15px] leading-7 text-muted">
-              Every book you save in this browser lives here — nothing leaves
-              your device.
+              Books in this browser live below — sign in to also back them up
+              to your cloud library.
             </p>
           </div>
+          <CloudLibrary />
           <LibraryClient />
         </Container>
       </main>

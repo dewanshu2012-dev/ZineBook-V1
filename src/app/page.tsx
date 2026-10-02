@@ -38,8 +38,8 @@ export default function Home() {
                     Create a magazine
                     <HugeiconsIcon icon={ArrowRight01Icon} className="h-4 w-4" strokeWidth={2} />
                   </ButtonLink>
-                  <ButtonLink href="#craft" variant="secondary" size="lg">
-                    Revisit the craft
+                  <ButtonLink href="#about" variant="secondary" size="lg">
+                    About ZineBook
                   </ButtonLink>
                 </div>
               </div>

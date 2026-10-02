@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AuthProvider } from "@/components/auth/auth-provider";
 import { PublicationProvider } from "@/lib/publication-store";
 import "./globals.css";
 
@@ -12,7 +13,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className="h-full antialiased">
       <body className="flex min-h-full flex-col bg-paper text-ink">
-        <PublicationProvider>{children}</PublicationProvider>
+        <AuthProvider>
+          <PublicationProvider>{children}</PublicationProvider>
+        </AuthProvider>
       </body>
     </html>
   );
